@@ -1,0 +1,48 @@
+import pandas as pd
+from openpyxl import Workbook
+from openpyxl.utils.dataframe import dataframe_to_rows
+import requests
+
+# Step 1: Load and Clean Data
+file_path = 'Palak.xlsx'  # Replace with your actual file path
+df = pd.read_excel(file_path, sheet_name='Sheet1')
+
+# Keep only relevant columns
+df_cleaned = df[['Ticket ID', 'Title', 'Priority', 'Site Name', 'Issue detail']]
+
+# Step 2: Create an Excel Workbook for the Report
+report_file_path = 'copilot_report.xlsx'  # Output Excel file
+
+# Create a new workbook and select the active worksheet
+wb = Workbook()
+ws = wb.active
+ws.title = "Copilot Report"
+
+# Add headers to the sheet
+ws.append(df_cleaned.columns.tolist())
+
+# Write data rows
+for r in dataframe_to_rows(df_cleaned, index=False, header=False):
+    ws.append(r)
+
+# Step 3: Save the Report
+wb.save(report_file_path)
+print(f"Report generated and saved as '{report_file_path}'.")
+
+# Step 4: Integrate with Copilot API
+# Replace 'your_copilot_api_endpoint' and 'your_copilot_api_key' with actual Copilot details
+api_endpoint = 'https://api.copilot.com/report/upload'  # Replace with the actual Copilot API endpoint
+api_key = 'your_copilot_api_key'  # Replace with your actual Copilot API key
+
+# Prepare the request payload
+files = {'file': open(report_file_path, 'rb')}
+headers = {'Authorization': f'Bearer {api_key}'}
+
+# Simulate an API call to upload the report to Copilot
+response = requests.post(api_endpoint, files=files, headers=headers)
+
+# Check the response
+if response.status_code == 200:
+    print("Report successfully uploaded to Copilot.")
+else:
+    print(f"Failed to upload report: {response.status_code}"
