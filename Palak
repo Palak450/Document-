@@ -1,6 +1,91 @@
- As we continue to advance our strategic initiatives, we must optimize every tool to enhance operational excellence. To this end, we are conducting a focused survey to gather insights into how our leadership team leverages Microsoft Office tools daily. Given your pivotal role in the organization, I would appreciate your input.
+import pandas as pd
+import tkinter as tk
+from tkinter import simpledialog, messagebox
+from docx import Document
+from docx.enum.text import WD_ALIGN_PARAGRAPH
 
- As we continue to advance our strategic initiatives, we must optimize every tool to enhance operational excellence. To this end, we are conducting a focused survey to gather insights into how Microsoft office applications are integrated into respective workflow. Your feedback will directly influence our efforts to provide targeted support ensuring that we maximize the effectiveness of these tools across the organisation.
+# Load the CSV data
+file_path = 'Palak.csv'  # Replace with your CSV file path
+df = pd.read_csv(file_path)
 
- As part of our ongoing efforts to enhance operational efficiency and ensure we are fully leveraging the tools provided to us. We are conducting a brief survey focused on the utilization of Microsoft Office within our organization. Your insights, as key leaders within the organization, are crucial to this initiative.
-Your feedback will play a significant role in shaping our strategies to better support your work and optimize the use of Microsoft Office Application.
+# Function to generate the major incident summary report for a specific Ticket ID
+def generate_report(ticket_id):
+    ticket_data = df[df['Ticket ID'] == ticket_id]
+    
+    if ticket_data.empty:
+        messagebox.showerror("Error", "No data found for the given Ticket ID.")
+        return
+    
+    # Create a Word document
+    doc = Document()
+    
+    # Add a title to the report
+    title = doc.add_heading(f"Major Incident Summary Report for Ticket ID: {ticket_id}", level=1)
+    title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    
+    # Incident Title
+    doc.add_heading("Incident Title:", level=2)
+    doc.add_paragraph(ticket_data.iloc[0].get('Title', 'Data not available'))
+    
+    # Severity
+    doc.add_heading("Severity:", level=2)
+    doc.add_paragraph(ticket_data.iloc[0].get('Priority', 'Data not available'))
+    
+    # Affected Services
+    doc.add_heading("Affected Services:", level=2)
+    doc.add_paragraph(ticket_data.iloc[0].get('Site Name', 'Data not available'))
+    
+    # Start Time
+    doc.add_heading("Start Time:", level=2)
+    doc.add_paragraph(ticket_data.iloc[0].get('Start Time', 'Data not available'))  # Replace with actual start time if available
+    
+    # Duration
+    doc.add_heading("Duration:", level=2)
+    doc.add_paragraph(ticket_data.iloc[0].get('Duration', 'Data not available'))  # Replace with actual duration if available
+    
+    # Incident Team Members
+    doc.add_heading("Incident Team Members:", level=2)
+    doc.add_paragraph(ticket_data.iloc[0].get('Incident Team Members', 'Data not available'))  # Replace with actual team members if available
+    
+    # Executive Summary
+    doc.add_heading("Executive Summary", level=2)
+    doc.add_paragraph(f"An executive summary of the incident titled '{ticket_data.iloc[0].get('Title', 'Data not available')}' that occurred at '{ticket_data.iloc[0].get('Site Name', 'Data not available')}' with priority '{ticket_data.iloc[0].get('Priority', 'Data not available')}'.")
+    
+    # Chronological Analysis
+    doc.add_heading("Chronological Analysis", level=2)
+    doc.add_paragraph(ticket_data.iloc[0].get('Chronological Analysis', 'Data not available'))  # Replace with actual chronological analysis if available
+    
+    # Teams Involved
+    doc.add_heading("Teams Involved", level=2)
+    doc.add_paragraph(ticket_data.iloc[0].get('Teams Involved', 'Data not available'))  # Replace with actual teams involved if available
+    
+    # Technical Details
+    doc.add_heading("Technical Details", level=2)
+    doc.add_paragraph(ticket_data.iloc[0].get('Technical Details', 'Data not available'))  # Replace with actual technical details if available
+    
+    # Post-mortem Analysis
+    doc.add_heading("Post-mortem Analysis", level=2)
+    doc.add_paragraph(ticket_data.iloc[0].get('Post-mortem Analysis', 'Data not available'))  # Replace with actual post-mortem analysis if available
+    
+    # Save the report
+    report_file_path = f'ticket_{ticket_id}_report.docx'
+    try:
+        doc.save(report_file_path)
+        messagebox.showinfo("Report Generated", f"Report saved as '{report_file_path}'.")
+    except Exception as e:
+        messagebox.showerror("Error", f"Failed to save the report. Error: {e}")
+
+# GUI setup to ask for Ticket ID
+root = tk.Tk()
+root.withdraw()  # Hide the root window
+
+# Ask the user for the Ticket ID
+ticket_id = simpledialog.askinteger("Input", "Enter Ticket ID")
+
+# Generate the report for the provided Ticket ID
+if ticket_id is not None:
+    generate_report(ticket_id)
+else:
+    messagebox.showwarning("Input Error", "No Ticket ID provided.")
+
+root.mainloop()
