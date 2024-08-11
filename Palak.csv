@@ -1,0 +1,2 @@
+Ticket ID,Title,Affected Services,State,Area,Steps to resolve Incident,Incident Discription,Incident Team Members,RCA Team Members,Incident Severity,Incident Start Time,Incident End Time,Tech Area Impacted
+823949,NICE not working due to a global outage in the NICE cloud impacting multiple customers including fareportal,NICE,CA Implemented,Engineering\IT\Comms-Voice,*EMS opened a bridge and invited concerned stakeholders to the bridge,RCA will be shared by Commsteam,Deepak Singh Chauhan Sandeep Gandhir,Bharat Deshwal,P1,,2024-01-01T12:20:00Z,CIO/Voice/ NICE voice platform
