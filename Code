@@ -1,48 +1,86 @@
 import pandas as pd
-from openpyxl import Workbook
-from openpyxl.utils.dataframe import dataframe_to_rows
-import requests
+import tkinter as tk
+from tkinter import simpledialog, messagebox
+from docx import Document
+from docx.shared import Pt
+from docx.enum.text import WD_ALIGN_PARAGRAPH
 
-# Step 1: Load and Clean Data
-file_path = 'Palak.xlsx'  # Replace with your actual file path
-df = pd.read_excel(file_path, sheet_name='Sheet1')
+# Load the Excel data
+file_path = 'Palak.xlsx'  # Replace with your file path
+df = pd.read_excel(file_path)
 
-# Keep only relevant columns
-df_cleaned = df[['Ticket ID', 'Title', 'Priority', 'Site Name', 'Issue detail']]
+# Keep only the relevant columns
+relevant_columns = ['Ticket ID', 'Title', 'Priority', 'Site Name', 'Issue detail']
+df_cleaned = df[relevant_columns]
 
-# Step 2: Create an Excel Workbook for the Report
-report_file_path = 'copilot_report.xlsx'  # Output Excel file
+# Function to generate the executive report for a specific Ticket ID
+def generate_report(ticket_id):
+    ticket_data = df_cleaned[df_cleaned['Ticket ID'] == ticket_id]
+    
+    if ticket_data.empty:
+        messagebox.showerror("Error", "No data found for the given Ticket ID.")
+        return
+    
+    # Create a Word document
+    doc = Document()
+    
+    # Add a title to the report
+    title = doc.add_heading(f"Executive Summary for Ticket ID: {ticket_id}", level=1)
+    title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    
+    # Add Overview
+    doc.add_heading("Overview", level=2)
+    doc.add_paragraph(
+        f"This report provides an analysis of the issue titled '{ticket_data.iloc[0]['Title']}' "
+        f"with priority '{ticket_data.iloc[0]['Priority']}' at the '{ticket_data.iloc[0]['Site Name']}' site."
+    )
+    
+    # Add Key Findings and Recommendations
+    doc.add_heading("Key Findings and Recommendations", level=2)
+    doc.add_paragraph(f"Identified issue: {ticket_data.iloc[0]['Issue detail']}.")
+    doc.add_paragraph("Recommendations: Further investigation is needed to resolve the issue. "
+                      "Consider involving the development team to identify and address the root cause.")
+    
+    # Add Goals and Objectives
+    doc.add_heading("Goals and Objectives", level=2)
+    doc.add_paragraph("Goal: Resolve the issue promptly to minimize disruption at the site.")
+    doc.add_paragraph("Objective: Ensure similar issues do not arise in the future through preventive measures.")
+    
+    # Add Strategies
+    doc.add_heading("Strategies", level=2)
+    table = doc.add_table(rows=1, cols=2)
+    hdr_cells = table.rows[0].cells
+    hdr_cells[0].text = 'Key Area'
+    hdr_cells[1].text = 'Strategy'
+    
+    row_cells = table.add_row().cells
+    row_cells[0].text = 'Issue Resolution'
+    row_cells[1].text = (
+        f"Implement a fix for the issue titled '{ticket_data.iloc[0]['Title']}' "
+        f"at the '{ticket_data.iloc[0]['Site Name']}' site."
+    )
 
-# Create a new workbook and select the active worksheet
-wb = Workbook()
-ws = wb.active
-ws.title = "Copilot Report"
+    row_cells = table.add_row().cells
+    row_cells[0].text = 'Future Prevention'
+    row_cells[1].text = "Conduct a post-mortem analysis to identify the cause and implement preventive measures."
+    
+    # Save the report
+    report_file_path = f'ticket_{ticket_id}_report.docx'
+    doc.save(report_file_path)
+    
+    messagebox.showinfo("Report Generated", f"Report saved as '{report_file_path}'.")
 
-# Add headers to the sheet
-ws.append(df_cleaned.columns.tolist())
+# GUI setup to ask for Ticket ID
+root = tk.Tk()
+root.withdraw()  # Hide the root window
 
-# Write data rows
-for r in dataframe_to_rows(df_cleaned, index=False, header=False):
-    ws.append(r)
+# Ask the user for the Ticket ID
+ticket_id = simpledialog.askinteger("Input", "Enter Ticket ID")
 
-# Step 3: Save the Report
-wb.save(report_file_path)
-print(f"Report generated and saved as '{report_file_path}'.")
-
-# Step 4: Integrate with Copilot API
-# Replace 'your_copilot_api_endpoint' and 'your_copilot_api_key' with actual Copilot details
-api_endpoint = 'https://api.copilot.com/report/upload'  # Replace with the actual Copilot API endpoint
-api_key = 'your_copilot_api_key'  # Replace with your actual Copilot API key
-
-# Prepare the request payload
-files = {'file': open(report_file_path, 'rb')}
-headers = {'Authorization': f'Bearer {api_key}'}
-
-# Simulate an API call to upload the report to Copilot
-response = requests.post(api_endpoint, files=files, headers=headers)
-
-# Check the response
-if response.status_code == 200:
-    print("Report successfully uploaded to Copilot.")
+# Generate the report for the provided Ticket ID
+if ticket_id is not None:
+    generate_report(ticket_id)
 else:
-    print(f"Failed to upload report: {response.status_code}"
+    messagebox.showwarning("Input Error", "No Ticket ID provided.")
+
+root.mainloop()
