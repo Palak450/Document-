@@ -1,91 +1,33 @@
-import pandas as pd
-import tkinter as tk
-from tkinter import simpledialog, messagebox
-from docx import Document
-from docx.enum.text import WD_ALIGN_PARAGRAPH
+# Load the required Excel COM object
+$Excel = New-Object -ComObject Excel.Application
+$Excel.Visible = $false
 
-# Load the CSV data
-file_path = 'Palak.csv'  # Replace with your CSV file path
-df = pd.read_csv(file_path)
+# Load the workbook and select the first worksheet
+$Workbook = $Excel.Workbooks.Open("C:\path\to\your\file\Book1.xlsx")
+$Worksheet = $Workbook.Sheets.Item(1)
 
-# Function to generate the major incident summary report for a specific Ticket ID
-def generate_report(ticket_id):
-    ticket_data = df[df['Ticket ID'] == ticket_id]
-    
-    if ticket_data.empty:
-        messagebox.showerror("Error", "No data found for the given Ticket ID.")
-        return
-    
-    # Create a Word document
-    doc = Document()
-    
-    # Add a title to the report
-    title = doc.add_heading(f"Major Incident Summary Report for Ticket ID: {ticket_id}", level=1)
-    title.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    
-    # Incident Title
-    doc.add_heading("Incident Title:", level=2)
-    doc.add_paragraph(ticket_data.iloc[0].get('Title', 'Data not available'))
-    
-    # Severity
-    doc.add_heading("Severity:", level=2)
-    doc.add_paragraph(ticket_data.iloc[0].get('Priority', 'Data not available'))
-    
-    # Affected Services
-    doc.add_heading("Affected Services:", level=2)
-    doc.add_paragraph(ticket_data.iloc[0].get('Site Name', 'Data not available'))
-    
-    # Start Time
-    doc.add_heading("Start Time:", level=2)
-    doc.add_paragraph(ticket_data.iloc[0].get('Start Time', 'Data not available'))  # Replace with actual start time if available
-    
-    # Duration
-    doc.add_heading("Duration:", level=2)
-    doc.add_paragraph(ticket_data.iloc[0].get('Duration', 'Data not available'))  # Replace with actual duration if available
-    
-    # Incident Team Members
-    doc.add_heading("Incident Team Members:", level=2)
-    doc.add_paragraph(ticket_data.iloc[0].get('Incident Team Members', 'Data not available'))  # Replace with actual team members if available
-    
-    # Executive Summary
-    doc.add_heading("Executive Summary", level=2)
-    doc.add_paragraph(f"An executive summary of the incident titled '{ticket_data.iloc[0].get('Title', 'Data not available')}' that occurred at '{ticket_data.iloc[0].get('Site Name', 'Data not available')}' with priority '{ticket_data.iloc[0].get('Priority', 'Data not available')}'.")
-    
-    # Chronological Analysis
-    doc.add_heading("Chronological Analysis", level=2)
-    doc.add_paragraph(ticket_data.iloc[0].get('Chronological Analysis', 'Data not available'))  # Replace with actual chronological analysis if available
-    
-    # Teams Involved
-    doc.add_heading("Teams Involved", level=2)
-    doc.add_paragraph(ticket_data.iloc[0].get('Teams Involved', 'Data not available'))  # Replace with actual teams involved if available
-    
-    # Technical Details
-    doc.add_heading("Technical Details", level=2)
-    doc.add_paragraph(ticket_data.iloc[0].get('Technical Details', 'Data not available'))  # Replace with actual technical details if available
-    
-    # Post-mortem Analysis
-    doc.add_heading("Post-mortem Analysis", level=2)
-    doc.add_paragraph(ticket_data.iloc[0].get('Post-mortem Analysis', 'Data not available'))  # Replace with actual post-mortem analysis if available
-    
-    # Save the report
-    report_file_path = f'ticket_{ticket_id}_report.docx'
-    try:
-        doc.save(report_file_path)
-        messagebox.showinfo("Report Generated", f"Report saved as '{report_file_path}'.")
-    except Exception as e:
-        messagebox.showerror("Error", f"Failed to save the report. Error: {e}")
+# Find the last row with data in the sheet
+$LastRow = $Worksheet.UsedRange.Rows.Count
 
-# GUI setup to ask for Ticket ID
-root = tk.Tk()
-root.withdraw()  # Hide the root window
+# Add a new column named "Description" in the first empty column
+$Worksheet.Cells.Item(1, $Worksheet.UsedRange.Columns.Count + 1).Value2 = "Description"
 
-# Ask the user for the Ticket ID
-ticket_id = simpledialog.askinteger("Input", "Enter Ticket ID")
+# Loop through each row, combine "Action" and "Description" values, and write to the new "Description" column
+for ($row = 2; $row -le $LastRow; $row++) {
+    $ActionValue = $Worksheet.Cells.Item($row, 2).Text  # Assuming Action is in the 2nd column
+    $ExistingDescription = $Worksheet.Cells.Item($row, 3).Text  # Assuming Description is in the 3rd column
+    $CombinedDescription = "$ActionValue $ExistingDescription"
 
-# Generate the report for the provided Ticket ID
-if ticket_id is not None:
-    generate_report(ticket_id)
-else:
-    messagebox.showwarning("Input Error", "No Ticket ID provided.")
+    # Write the combined text to the new column
+    $Worksheet.Cells.Item($row, $Worksheet.UsedRange.Columns.Count + 1).Value2 = $CombinedDescription
+}
 
-root.mainloop()
+# Save and close the workbook
+$Workbook.Save()
+$Workbook.Close()
+$Excel.Quit()
+
+# Release COM objects
+[System.Runtime.Interopservices.Marshal]::ReleaseComObject($Worksheet) | Out-Null
+[System.Runtime.Interopservices.Marshal]::ReleaseComObject($Workbook) | Out-Null
+[System.Runtime.Interopservices.Marshal]::ReleaseComObject($Excel) | Out-Null
