@@ -1,33 +1,14 @@
-# Load the required Excel COM object
-$Excel = New-Object -ComObject Excel.Application
-$Excel.Visible = $false
+# Import the Active Directory module
+Import-Module ActiveDirectory
 
-# Load the workbook and select the first worksheet
-$Workbook = $Excel.Workbooks.Open("C:\path\to\your\file\Book1.xlsx")
-$Worksheet = $Workbook.Sheets.Item(1)
+# Define variables
+$Username = "jdoe"                   # Replace with the username (sAMAccountName) of the user
+$NewDescription = "Updated account description"  # Replace with the new description
 
-# Find the last row with data in the sheet
-$LastRow = $Worksheet.UsedRange.Rows.Count
-
-# Add a new column named "Description" in the first empty column
-$Worksheet.Cells.Item(1, $Worksheet.UsedRange.Columns.Count + 1).Value2 = "Description"
-
-# Loop through each row, combine "Action" and "Description" values, and write to the new "Description" column
-for ($row = 2; $row -le $LastRow; $row++) {
-    $ActionValue = $Worksheet.Cells.Item($row, 2).Text  # Assuming Action is in the 2nd column
-    $ExistingDescription = $Worksheet.Cells.Item($row, 3).Text  # Assuming Description is in the 3rd column
-    $CombinedDescription = "$ActionValue $ExistingDescription"
-
-    # Write the combined text to the new column
-    $Worksheet.Cells.Item($row, $Worksheet.UsedRange.Columns.Count + 1).Value2 = $CombinedDescription
+# Update the user's description in Active Directory
+try {
+    Set-ADUser -Identity $Username -Description $NewDescription
+    Write-Output "Description updated successfully for user $Username."
+} catch {
+    Write-Output "Failed to update description for user $Username. Error: $_"
 }
-
-# Save and close the workbook
-$Workbook.Save()
-$Workbook.Close()
-$Excel.Quit()
-
-# Release COM objects
-[System.Runtime.Interopservices.Marshal]::ReleaseComObject($Worksheet) | Out-Null
-[System.Runtime.Interopservices.Marshal]::ReleaseComObject($Workbook) | Out-Null
-[System.Runtime.Interopservices.Marshal]::ReleaseComObject($Excel) | Out-Null
