@@ -1,14 +1,28 @@
-# Import the Active Directory module
+# Import the necessary modules
 Import-Module ActiveDirectory
+Import-Module ImportExcel
 
-# Define variables
-$Username = "jdoe"                   # Replace with the username (sAMAccountName) of the user
-$NewDescription = "Updated account description"  # Replace with the new description
+# Define the path to the Excel file
+$ExcelFilePath = "C:\path\to\Book1.xlsx"  # Replace with the actual path
 
-# Update the user's description in Active Directory
-try {
-    Set-ADUser -Identity $Username -Description $NewDescription
-    Write-Output "Description updated successfully for user $Username."
-} catch {
-    Write-Output "Failed to update description for user $Username. Error: $_"
+# Import the Excel file
+$UserData = Import-Excel -Path $ExcelFilePath
+
+# Loop through each row in the Excel data
+foreach ($User in $UserData) {
+    # Retrieve values from each column
+    $Username = $User.samaccountname
+    $AccessRole = $User.'Access Role'
+    $Action = $User.Action
+
+    # Create the new description
+    $NewDescription = "Access Role: $AccessRole, Action: $Action"
+
+    # Update the user's description in Active Directory
+    try {
+        Set-ADUser -Identity $Username -Description $NewDescription
+        Write-Output "Description updated for user $Username."
+    } catch {
+        Write-Output "Failed to update description for user $Username. Error: $_"
+    }
 }
