@@ -1,86 +1,39 @@
-import pandas as pd
-import tkinter as tk
-from tkinter import simpledialog, messagebox
-from docx import Document
-from docx.shared import Pt
-from docx.enum.text import WD_ALIGN_PARAGRAPH
+# Check the current execution policy
+$currentPolicy = Get-ExecutionPolicy
+Write-Output "Current Execution Policy: $currentPolicy"
 
-# Load the Excel data
-file_path = 'Palak.xlsx'  # Replace with your file path
-df = pd.read_excel(file_path)
+# Temporarily set the policy to bypass, only for this script run
+powershell -noexit -ExecutionPolicy Bypass -Command {
+    # Import the necessary modules
+    Import-Module ActiveDirectory
+    Import-Module ImportExcel
 
-# Keep only the relevant columns
-relevant_columns = ['Ticket ID', 'Title', 'Priority', 'Site Name', 'Issue detail']
-df_cleaned = df[relevant_columns]
+    # Define the path to the Excel file
+    $ExcelFilePath = "C:\path\to\Book1.xlsx"  # Replace with the actual path
 
-# Function to generate the executive report for a specific Ticket ID
-def generate_report(ticket_id):
-    ticket_data = df_cleaned[df_cleaned['Ticket ID'] == ticket_id]
-    
-    if ticket_data.empty:
-        messagebox.showerror("Error", "No data found for the given Ticket ID.")
-        return
-    
-    # Create a Word document
-    doc = Document()
-    
-    # Add a title to the report
-    title = doc.add_heading(f"Executive Summary for Ticket ID: {ticket_id}", level=1)
-    title.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    
-    # Add Overview
-    doc.add_heading("Overview", level=2)
-    doc.add_paragraph(
-        f"This report provides an analysis of the issue titled '{ticket_data.iloc[0]['Title']}' "
-        f"with priority '{ticket_data.iloc[0]['Priority']}' at the '{ticket_data.iloc[0]['Site Name']}' site."
-    )
-    
-    # Add Key Findings and Recommendations
-    doc.add_heading("Key Findings and Recommendations", level=2)
-    doc.add_paragraph(f"Identified issue: {ticket_data.iloc[0]['Issue detail']}.")
-    doc.add_paragraph("Recommendations: Further investigation is needed to resolve the issue. "
-                      "Consider involving the development team to identify and address the root cause.")
-    
-    # Add Goals and Objectives
-    doc.add_heading("Goals and Objectives", level=2)
-    doc.add_paragraph("Goal: Resolve the issue promptly to minimize disruption at the site.")
-    doc.add_paragraph("Objective: Ensure similar issues do not arise in the future through preventive measures.")
-    
-    # Add Strategies
-    doc.add_heading("Strategies", level=2)
-    table = doc.add_table(rows=1, cols=2)
-    hdr_cells = table.rows[0].cells
-    hdr_cells[0].text = 'Key Area'
-    hdr_cells[1].text = 'Strategy'
-    
-    row_cells = table.add_row().cells
-    row_cells[0].text = 'Issue Resolution'
-    row_cells[1].text = (
-        f"Implement a fix for the issue titled '{ticket_data.iloc[0]['Title']}' "
-        f"at the '{ticket_data.iloc[0]['Site Name']}' site."
-    )
+    # Import the Excel file
+    $UserData = Import-Excel -Path $ExcelFilePath
 
-    row_cells = table.add_row().cells
-    row_cells[0].text = 'Future Prevention'
-    row_cells[1].text = "Conduct a post-mortem analysis to identify the cause and implement preventive measures."
-    
-    # Save the report
-    report_file_path = f'ticket_{ticket_id}_report.docx'
-    doc.save(report_file_path)
-    
-    messagebox.showinfo("Report Generated", f"Report saved as '{report_file_path}'.")
+    # Loop through each row in the Excel data
+    foreach ($User in $UserData) {
+        # Retrieve values from each column
+        $Username = $User.samaccountname
+        $AccessRole = $User.'Access Role'
+        $Action = $User.Action
 
-# GUI setup to ask for Ticket ID
-root = tk.Tk()
-root.withdraw()  # Hide the root window
+        # Create the new description
+        $NewDescription = "Access Role: $AccessRole, Action: $Action"
 
-# Ask the user for the Ticket ID
-ticket_id = simpledialog.askinteger("Input", "Enter Ticket ID")
+        # Update the user's description in Active Directory
+        try {
+            Set-ADUser -Identity $Username -Description $NewDescription
+            Write-Output "Description updated for user $Username."
+        } catch {
+            Write-Output "Failed to update description for user $Username. Error: $_"
+        }
+    }
+}
 
-# Generate the report for the provided Ticket ID
-if ticket_id is not None:
-    generate_report(ticket_id)
-else:
-    messagebox.showwarning("Input Error", "No Ticket ID provided.")
-
-root.mainloop()
+# Optional: Reset the execution policy to a safer option, like RemoteSigned, after script execution
+Set-ExecutionPolicy RemoteSigned -Scope Process
+Write-Output "Execution policy reset to RemoteSigned for this session."
