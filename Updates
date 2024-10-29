@@ -1,0 +1,40 @@
+# Store the current execution policy
+$currentPolicy = Get-ExecutionPolicy
+Write-Output "Current Execution Policy: $currentPolicy"
+
+# Temporarily set the execution policy to RemoteSigned
+Set-ExecutionPolicy RemoteSigned -Scope Process -Force
+Write-Output "Temporary Execution Policy set to RemoteSigned for this session."
+
+# Import the necessary modules
+Import-Module ActiveDirectory
+Import-Module ImportExcel
+
+# Define the path to the Excel file
+$ExcelFilePath = "C:\path\to\Book1.xlsx"  # Replace with the actual path
+
+# Import the Excel file
+$UserData = Import-Excel -Path $ExcelFilePath
+
+# Loop through each row in the Excel data
+foreach ($User in $UserData) {
+    # Retrieve values from each column
+    $Username = $User.samaccountname
+    $AccessRole = $User.'Access Role'
+    $Action = $User.Action
+
+    # Create the new description
+    $NewDescription = "Access Role: $AccessRole, Action: $Action"
+
+    # Update the user's description in Active Directory
+    try {
+        Set-ADUser -Identity $Username -Description $NewDescription
+        Write-Output "Description updated for user $Username."
+    } catch {
+        Write-Output "Failed to update description for user $Username. Error: $_"
+    }
+}
+
+# Restore the original execution policy
+Set-ExecutionPolicy $currentPolicy -Scope Process -Force
+Write-Output "Execution policy restored to $currentPolicy."
