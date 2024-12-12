@@ -1,39 +1,37 @@
-# Check the current execution policy
-$currentPolicy = Get-ExecutionPolicy
-Write-Output "Current Execution Policy: $currentPolicy"
+import dash
+from dash import dcc, html
+import pandas as pd
+import plotly.express as px
 
-# Temporarily set the policy to bypass, only for this script run
-powershell -noexit -ExecutionPolicy Bypass -Command {
-    # Import the necessary modules
-    Import-Module ActiveDirectory
-    Import-Module ImportExcel
-
-    # Define the path to the Excel file
-    $ExcelFilePath = "C:\path\to\Book1.xlsx"  # Replace with the actual path
-
-    # Import the Excel file
-    $UserData = Import-Excel -Path $ExcelFilePath
-
-    # Loop through each row in the Excel data
-    foreach ($User in $UserData) {
-        # Retrieve values from each column
-        $Username = $User.samaccountname
-        $AccessRole = $User.'Access Role'
-        $Action = $User.Action
-
-        # Create the new description
-        $NewDescription = "Access Role: $AccessRole, Action: $Action"
-
-        # Update the user's description in Active Directory
-        try {
-            Set-ADUser -Identity $Username -Description $NewDescription
-            Write-Output "Description updated for user $Username."
-        } catch {
-            Write-Output "Failed to update description for user $Username. Error: $_"
-        }
-    }
+# Sample data (replace with data fetched from AD)
+data = {
+    "User": ["Alice", "Bob", "Charlie", "David"],
+    "Last Logon": ["2024-12-10", "2024-12-11", "2024-12-09", "2024-12-08"],
+    "Status": ["Active", "Active", "Inactive", "Active"],
 }
+df = pd.DataFrame(data)
 
-# Optional: Reset the execution policy to a safer option, like RemoteSigned, after script execution
-Set-ExecutionPolicy RemoteSigned -Scope Process
-Write-Output "Execution policy reset to RemoteSigned for this session."
+app = dash.Dash(__name__)
+
+app.layout = html.Div([
+    html.H1("Active Directory Dashboard"),
+    
+    # User Table
+    html.Div([
+        html.H2("User Overview"),
+        dcc.Graph(figure=px.bar(df, x="User", y="Last Logon", color="Status"))
+    ]),
+
+    # Filters
+    html.Div([
+        html.Label("Filter by Status:"),
+        dcc.Dropdown(
+            id='status-filter',
+            options=[{"label": s, "value": s} for s in df["Status"].unique()],
+            multi=True
+        ),
+    ])
+])
+
+if __name__ == "__main__":
+    app.run_server(debug=True)
